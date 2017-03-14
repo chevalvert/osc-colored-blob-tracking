@@ -1,8 +1,6 @@
 public ControlP5 cp5;
-public RadioButton visibleSnapshot_toggle;
+public RadioButton VISIBLE_SNAPSHOT_toggle;
 public Range blobsize_slider, depth_range;
-public Println console;
-public Textarea console_area;
 public Chart graph;
 public int buttonColor, buttonBgColor;
 public Toggle btn_picker_red, btn_picker_green, btn_picker_blue;
@@ -101,23 +99,31 @@ void initControls(int x, int y) {
     .setSize(20, 20)
     .setPosition(x + 21, y);
 
+  // -------------------------------------------------------------------------
+
+  cp5.addScrollableList("streams")
+    .addItems(CAPTURES)
+    .setPosition(OFFSET_X, 0)
+    .setSize(400, height)
+    .setColorBackground(BLUE)
+    .setColorForeground(RED);
+
 
 	// -------------------------------------------------------------------------
 
-	visibleSnapshot_toggle = cp5.addRadioButton("radioButton")
-		.setPosition(x+=(21+21+10+800+10), y=10)
+	VISIBLE_SNAPSHOT_toggle = cp5.addRadioButton("radioButton")
+		.setPosition(x+=(21+21+10+400+10), y=10)
 		.setSize(20,20)
 		.setColorLabel(color(0))
 		.setColorBackground(BLUE)
 		.setColorActive(RED)
 		.setItemsPerRow(6)
-		.addItem("0",0)
-		.addItem("1",1)
-		.addItem("2",2)
-		.addItem("3",3)
-		// .addItem("4",4)
+		.addItem("0", 0)
+		.addItem("1", 1)
+    .addItem("2", 2)
+		.addItem("3", 3)
 		.hideLabels();
-	visibleSnapshot_toggle.activate(visibleSnapshot);
+	VISIBLE_SNAPSHOT_toggle.activate(VISIBLE_SNAPSHOT);
 
 	cp5.addToggle("show_blobs")
 		.setLabel("blobs")
@@ -251,19 +257,6 @@ void initControls(int x, int y) {
 		.setColorForeground(RED)
 		.setView(Chart.LINE);
 
-	// -------------------------------------------------------------------------
-	// console = cp5.addConsole(
-	// 			cp5.addTextarea("txt")
-	// 				.setPosition(x+=180, y=10)
-	// 				.setSize((width-x-10), (height-y-10-graph.getHeight()-10))
-	// 				.setFont(createFont("", 10))
-	// 				.setLineHeight(14)
-	// 				.setColor(color(0))
-	// 				.setColorBackground(WHITE)
-	// 				.setColorForeground(RED));
-
-
-
 	setLock(cp5.getController("thresholdBlockSize"), true);
 	setLock(cp5.getController("thresholdConstant"), true);
 
@@ -298,11 +291,26 @@ void setLock(Controller theController, boolean theValue) {
 }
 
 void controlEvent(ControlEvent theEvent) {
-	if(theEvent.isFrom(visibleSnapshot_toggle)) {
-		visibleSnapshot = int(theEvent.getGroup().getValue());
+	if(theEvent.isFrom(VISIBLE_SNAPSHOT_toggle)) {
+		VISIBLE_SNAPSHOT = int(theEvent.getGroup().getValue());
 	}
 	else if(theEvent.isFrom("blobSizeThreshold")) {
 		blob_size_min = int(theEvent.getController().getArrayValue(0));
 		blob_size_max = int(theEvent.getController().getArrayValue(1));
 	}
+}
+
+void streams(int n) {
+  try {
+    Capture webcam = new Capture(this, CAPTURES[n]);
+    webcam.start();
+    INPUT = new Input(this, webcam, n);
+
+  } catch (Exception e) {
+    println("Error attaching webcam(s): " + e.getMessage());
+
+    Capture webcam = new Capture(this, CAPTURES[0]);
+    webcam.start();
+    INPUT = new Input(this, webcam, n);
+  }
 }

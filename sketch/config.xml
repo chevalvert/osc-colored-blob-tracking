@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+  <picker name="red">
+    <color b="142" g="62" r="16"/>
+    <color b="132" g="53" r="9"/>
+    <color b="139" g="66" r="0"/>
+  </picker>
+  <picker name="green"/>
+  <picker name="blue"/>
+  <clip height="158" name="name=aGent V6 HD,size=400x300,fps=30" width="-249" x="326" y="64"/>
+</config>

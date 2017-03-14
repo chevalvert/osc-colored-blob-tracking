@@ -19,9 +19,11 @@ public BlobAnalysis BLOB_ANALYSIS;
 public ArrayList<ColorPicker> PICKERS;
 public OSCWrapper OSC;
 
+public String[] CAPTURES;
+
 public int
   OFFSET_X = 61,
-  OFFSET_Y = 10;
+  OFFSET_Y = 50;
 
 public float
   contrast = 1.35,
@@ -29,7 +31,7 @@ public float
   filter_beta = 0.007,
   filter_threshold = 10;
 public int
-  visibleSnapshot = 0,
+  VISIBLE_SNAPSHOT = 0,
   blob_size_min = 5,
   blob_size_max = 50,
   threshold = 75,
@@ -48,23 +50,19 @@ public color
 
 // -------------------------------------------------------------------------
 
+void settings () {
+  size(821, 620);
+  PJOGL.profile = 1;
+}
+
 void setup() {
-  size(1221, 620);
+  hint(DISABLE_TEXTURE_MIPMAPS);
+
+  CAPTURES = Capture.list();
+
   initControls(0, 0);
 
-  // String[] webcams = Capture.list();
-  // for (int i = 0; i < webcams.length; i++) println("webcam " + i + ": " + webcams[i]);
-
-  try {
-    Capture webcam = new Capture(this, 800, 600, "aGent V6 HD", 60);
-    webcam.start();
-    INPUT = new Input(this, webcam);
-  } catch (Exception e) {
-    println("Error attaching webcam(s): " + e.getMessage());
-    exit();
-  }
-
-  BLOB_DETECTOR = new BlobDetector(this, 800, 600);
+  BLOB_DETECTOR = new BlobDetector(this, 400, 300);
   BLOB_ANALYSIS = new BlobAnalysis(this, BLOB_DETECTOR, graph);
   OSC = new OSCWrapper(this, 1000);
 
@@ -77,6 +75,7 @@ void setup() {
   setLock(btn_picker_blue, false);
 
   load();
+  // surface.setvisible(false);
 }
 
 // -------------------------------------------------------------------------
@@ -90,27 +89,28 @@ void draw() {
   pushMatrix();
   translate(OFFSET_X, OFFSET_Y);
   String frame_name = "";
-  switch (visibleSnapshot) {
+
+  switch (VISIBLE_SNAPSHOT) {
     case 0 :
-    frame_name = " — [input]";
-    image(INPUT.getSrc(), 0, 0);
-    INPUT.drawClip();
-    break;
+      frame_name = " — [input]";
+      image(INPUT.getSrc(), 0, 0);
+      INPUT.drawClip();
+      break;
     case 1 :
-    frame_name = " — [pre-processed]";
-    image(BLOB_DETECTOR.preProcessedImage, 0, 0);
-    INPUT.drawClip();
-    break;
+      frame_name = " — [pre-processed]";
+      image(BLOB_DETECTOR.preProcessedImage, 0, 0);
+      INPUT.drawClip();
+      break;
     case 2 :
-    frame_name = " — [processed]";
-    image(BLOB_DETECTOR.processedImage, 0, 0);
-    INPUT.drawClip();
-    break;
+      frame_name = " — [processed]";
+      image(BLOB_DETECTOR.processedImage, 0, 0);
+      INPUT.drawClip();
+      break;
     case 3 :
-    frame_name = " — [contours]";
-    image(BLOB_DETECTOR.contoursImage, 0, 0);
-    INPUT.drawClip();
-    break;
+      frame_name = " — [contours]";
+      image(BLOB_DETECTOR.contoursImage, 0, 0);
+      INPUT.drawClip();
+      break;
   }
 
   if (show_blobs) BLOB_DETECTOR.displayBlobs();
@@ -156,10 +156,10 @@ void mousePressed() {
 
 void keyPressed() {
   if (keyCode == LEFT) {
-    visibleSnapshot = (visibleSnapshot > 0) ? visibleSnapshot - 1 : 3;
-    visibleSnapshot_toggle.activate(visibleSnapshot);
+    VISIBLE_SNAPSHOT = (VISIBLE_SNAPSHOT > 0) ? VISIBLE_SNAPSHOT - 1 : 3;
+    VISIBLE_SNAPSHOT_toggle.activate(VISIBLE_SNAPSHOT);
   }
-  else if (keyCode == RIGHT) visibleSnapshot_toggle.activate(visibleSnapshot=++visibleSnapshot%4);
+  else if (keyCode == RIGHT) VISIBLE_SNAPSHOT_toggle.activate(VISIBLE_SNAPSHOT=++VISIBLE_SNAPSHOT%4);
   else if (key == 's') save();
   else if (key == 'r') reset();
   else if (key == 'l') load();
@@ -170,6 +170,34 @@ void reset() { setup(); }
 void save() {
   cp5.saveProperties(("cp5.properties"));
   println("properties saved.");
+
+  println("saving config.xml");
+  XML config = new XML("config");
+
+  // saving color pickers
+  for (ColorPicker picker : PICKERS) {
+    XML picker_xml = config.addChild("picker");
+    picker_xml.setString("name", picker.getName());
+    for (ColorPicker.Color c : picker.colors) {
+      XML color_xml = picker_xml.addChild("color");
+      color_xml.setInt("r", int(red(c.c)));
+      color_xml.setInt("g", int(green(c.c)));
+      color_xml.setInt("b", int(blue(c.c)));
+    }
+  }
+
+  // saving inputs clip
+  Rectangle clip = INPUT.getClip();
+  XML clip_xml = config.addChild("clip");
+  clip_xml.setString("name", CAPTURES[INPUT.id]);
+  clip_xml.setInt("x", clip.x);
+  clip_xml.setInt("y", clip.y);
+  clip_xml.setInt("width", clip.width);
+  clip_xml.setInt("height", clip.height);
+
+  saveXML(config, "config.xml");
+  println("config.xml saved.");
+
 }
 
 void load() {
@@ -179,6 +207,40 @@ void load() {
     } catch(NullPointerException e) {
       println(e);
     }
+  }
+
+  try {
+    XML config = loadXML("config.xml");
+
+    // loading color pickers
+    XML[] pickers_xml = config.getChildren("picker");
+    PICKERS.clear();
+    for (XML picker_xml : pickers_xml) {
+      ColorPicker picker = new ColorPicker(picker_xml.getString("name"));
+      XML[] colors_xml = picker_xml.getChildren("color");
+      for (XML color_xml : colors_xml) {
+        int r = color_xml.getInt("r");
+        int g = color_xml.getInt("g");
+        int b = color_xml.getInt("b");
+        picker.add(color(r, g, b));
+      }
+      PICKERS.add(picker);
+    }
+
+    // loading inputs clip
+    if (INPUT != null) {
+      XML clip_xml = config.getChild("clip");
+
+      Rectangle clip = INPUT.getClip();
+      clip.x = clip_xml.getInt("x");
+      clip.y = clip_xml.getInt("y");
+      clip.width = clip_xml.getInt("width");
+      clip.height = clip_xml.getInt("height");;
+    }
+
+    println("config.xml config loaded.");
+  } catch (NullPointerException e) {
+    println(e);
   }
 }
 
@@ -205,7 +267,7 @@ void picking_draw() {
   setLock(btn_picker_blue, !is_picking_blue && (is_picking_red || is_picking_green));
 
   if (is_picking_red || is_picking_green || is_picking_blue) {
-    int x = 21 + 10 + 800 + OFFSET_Y;
+    int x = 21 + 10 + 400 + OFFSET_Y;
     noStroke();
     fill(255, 255 * 0.8);
     rect(x, 0, width - x, height);

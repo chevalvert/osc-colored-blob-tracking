@@ -12,26 +12,22 @@ public class BlobDetector {
 
   // -------------------------------------------------------------------------
 
-  public BlobDetector(PApplet parent, int width, int height) {
+  public BlobDetector(PApplet parent, int w, int h) {
     this.parent = parent;
-    this.width = width;
-    this.height = height;
+    this.width = w;
+    this.height = h;
 
-    this.opencv = new OpenCV(parent, width, height);
+    this.opencv = new OpenCV(parent, w, h);
     this.contours = new ArrayList<Contour>();
     this.blobList = new ArrayList<Blob>();
   }
 
   // -------------------------------------------------------------------------
 
-  public void detect(PImage input) {
-    this.detect(input, null);
-  }
-
+  public void detect(PImage input) { this.detect(input, null); }
   public void detect(PImage input, Rectangle clip) {
     // MANUAL ROI
     if (clip != null) {
-      // this.opencv.setROI(clip.x, clip.y, clip.width, clip.height);
       PGraphics pg = createGraphics(this.width, this.height);
       pg.beginDraw();
       pg.background(0);
@@ -54,7 +50,6 @@ public class BlobDetector {
       // Block size must be odd and greater than 3
       if (thresholdBlockSize%2 == 0) thresholdBlockSize++;
       if (thresholdBlockSize < 3) thresholdBlockSize = 3;
-
       opencv.adaptiveThreshold(thresholdBlockSize, thresholdConstant);
     } else opencv.threshold(threshold);
 

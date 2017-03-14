@@ -1,21 +1,21 @@
 public class Input {
-
-	private PApplet parent;
-
-	private Capture stream;
-	private PImage src;
-
+  private PApplet parent;
 	private Rectangle clip;
+  private PImage src;
+
+  public Capture stream;
+  public int id;
 
 	// -------------------------------------------------------------------------
 
-	public Input(PApplet parent, Capture stream) {
+	public Input(PApplet parent, Capture stream, int captureID) {
 		this.parent = parent;
+    this.id = captureID;
 
 		this.stream = stream;
 		this.stream.start();
 
-		this.src = new PImage(this.stream.width, this.stream.height);
+    this.src = new PImage(this.stream.width, this.stream.height);
 		this.clip = new Rectangle(0, 0, this.stream.width, this.stream.height);
 	}
 
@@ -23,18 +23,19 @@ public class Input {
 
 	private PImage update() {
 		if (this.stream.available()) this.stream.read();
-		this.src = this.stream;
-		return this.src;
+    this.src = this.stream;
+    return this.src;
 	}
 
 	// -------------------------------------------------------------------------
 
-	public int getHeight() { return this.src.height; }
 	public int getWidth() { return this.src.width; }
+  public int getHeight() { return this.src.height; }
+
   public void loadPixels() { this.src.loadPixels(); }
   public color get(int index) { return this.src.pixels[index]; }
 
-	public PImage getSrc() { return this.src; }
+  public PImage getSrc() { return this.src; }
   public PImage getClippedImage() {
 		Rectangle c = this.getAbsoluteClip();
 		return this.update().get(c.x, c.y, c.width-c.x, c.height-c.y);
