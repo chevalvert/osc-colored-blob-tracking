@@ -61,12 +61,12 @@ public class Blob {
     }
     endShape();
 
-    // movement
-    stroke(250, 0, 100);
-    strokeWeight(10);
-    point(this.position.x, this.position.y);
-    strokeWeight(4);
-    line(this.p_position.x, this.p_position.y, this.position.x, this.position.y);
+    // // movement
+    // stroke(250, 0, 100);
+    // strokeWeight(10);
+    // point(this.position.x, this.position.y);
+    // strokeWeight(4);
+    // line(this.p_position.x, this.p_position.y, this.position.x, this.position.y);
 
     if (this.hover) {
       // bounding box

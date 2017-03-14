@@ -36,10 +36,20 @@ public class Input {
   public color get(int index) { return this.src.pixels[index]; }
 
   public PImage getSrc() { return this.src; }
-  public PImage getClippedImage() {
+  public PImage getCropImage() {
 		Rectangle c = this.getAbsoluteClip();
 		return this.update().get(c.x, c.y, c.width-c.x, c.height-c.y);
 	}
+
+  public PImage getClippedImage() {
+    Rectangle c = this.getAbsoluteClip();
+    PGraphics pg = createGraphics(400, 300);
+    pg.beginDraw();
+    pg.background(0);
+    pg.image(this.getCropImage(), c.x, c.y);
+    pg.endDraw();
+    return pg.get();
+  }
 
 	public Rectangle getClip() { return this.clip; }
 	public Rectangle getAbsoluteClip() {
@@ -54,14 +64,14 @@ public class Input {
 
 	// -------------------------------------------------------------------------
 
-	public void drawClip() {
+	public void drawClip(int offY) {
 		pushStyle();
 		noFill();
 		strokeWeight(4);
 		stroke(250, 0, 100);
 
 		Rectangle c = this.getClip();
-		rect(c.x, c.y, c.width, c.height);
+		rect(c.x, c.y + offY, c.width, c.height);
 
 		popStyle();
 	}

@@ -101,10 +101,17 @@ void initControls(int x, int y) {
 
   // -------------------------------------------------------------------------
 
-  cp5.addScrollableList("streams")
+  cp5.addScrollableList("stream_top")
     .addItems(CAPTURES)
     .setPosition(OFFSET_X, 0)
-    .setSize(400, height)
+    .setSize(400, 300)
+    .setColorBackground(BLUE)
+    .setColorForeground(RED);
+
+  cp5.addScrollableList("stream_bottom")
+    .addItems(CAPTURES)
+    .setPosition(OFFSET_X, OFFSET_Y + 300)
+    .setSize(400, 300)
     .setColorBackground(BLUE)
     .setColorForeground(RED);
 
@@ -300,17 +307,21 @@ void controlEvent(ControlEvent theEvent) {
 	}
 }
 
-void streams(int n) {
+// -------------------------------------------------------------------------
+
+void stream_top(int n) { setStream(n, 0); }
+void stream_bottom(int n) { setStream(n, 1); }
+void setStream(int n, int pos) {
   try {
     Capture webcam = new Capture(this, CAPTURES[n]);
     webcam.start();
-    INPUT = new Input(this, webcam, n);
-
+    INPUTS[pos] = new Input(this, webcam, n);
+    println("pos: "+pos);
   } catch (Exception e) {
     println("Error attaching webcam(s): " + e.getMessage());
 
     Capture webcam = new Capture(this, CAPTURES[0]);
     webcam.start();
-    INPUT = new Input(this, webcam, n);
+    INPUTS[pos] = new Input(this, webcam, n);
   }
 }

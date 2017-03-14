@@ -24,18 +24,7 @@ public class BlobDetector {
 
   // -------------------------------------------------------------------------
 
-  public void detect(PImage input) { this.detect(input, null); }
-  public void detect(PImage input, Rectangle clip) {
-    // MANUAL ROI
-    if (clip != null) {
-      PGraphics pg = createGraphics(this.width, this.height);
-      pg.beginDraw();
-      pg.background(0);
-      pg.image(input, clip.x, clip.y);
-      pg.endDraw();
-      input = pg.get();
-    }
-
+  public void detect(PImage input) {
     this.opencv.loadImage(input);
     src = opencv.getSnapshot();
 

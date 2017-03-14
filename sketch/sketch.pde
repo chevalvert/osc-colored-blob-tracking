@@ -6,13 +6,15 @@
 * https://github.com/jorditost/ImageFiltering/tree/master/ImageFilteringWithBlobPersistence
 */
 
+// TODO : go full nodejs, because this sketch became ugly AF
 import controlP5.*;
 import gab.opencv.*;
 import java.awt.Rectangle;
 import javax.swing.JOptionPane;
 import processing.video.*;
 
-public Input INPUT;
+// public Input INPUT;
+public Input[] INPUTS;
 public BlobDetector BLOB_DETECTOR;
 public BlobAnalysis BLOB_ANALYSIS;
 
@@ -23,7 +25,7 @@ public String[] CAPTURES;
 
 public int
   OFFSET_X = 61,
-  OFFSET_Y = 50;
+  OFFSET_Y = 10;
 
 public float
   contrast = 1.35,
@@ -59,10 +61,11 @@ void setup() {
   hint(DISABLE_TEXTURE_MIPMAPS);
 
   CAPTURES = Capture.list();
+  INPUTS = new Input[2];
 
   initControls(0, 0);
 
-  BLOB_DETECTOR = new BlobDetector(this, 400, 300);
+  BLOB_DETECTOR = new BlobDetector(this, 400, 600);
   BLOB_ANALYSIS = new BlobAnalysis(this, BLOB_DETECTOR, graph);
   OSC = new OSCWrapper(this, 1000);
 
@@ -83,42 +86,52 @@ void setup() {
 void draw() {
   background(255);
 
-  BLOB_DETECTOR.detect(INPUT.getClippedImage(), INPUT.getAbsoluteClip());
-  BLOB_ANALYSIS.update();
+  if (INPUTS[0] != null || INPUTS[1] != null) {
+    PGraphics mergedInputs = createGraphics(400, 600);
+    mergedInputs.beginDraw();
+    mergedInputs.background(0);
+    if (INPUTS[0] != null) mergedInputs.image(INPUTS[0].getClippedImage(), 0, 0);
+    if (INPUTS[1] != null) mergedInputs.image(INPUTS[1].getClippedImage(), 0, 300);
+    mergedInputs.endDraw();
 
-  pushMatrix();
-  translate(OFFSET_X, OFFSET_Y);
-  String frame_name = "";
+    BLOB_DETECTOR.detect(mergedInputs.get());
+    BLOB_ANALYSIS.update();
 
-  switch (VISIBLE_SNAPSHOT) {
-    case 0 :
-      frame_name = " — [input]";
-      image(INPUT.getSrc(), 0, 0);
-      INPUT.drawClip();
-      break;
-    case 1 :
-      frame_name = " — [pre-processed]";
-      image(BLOB_DETECTOR.preProcessedImage, 0, 0);
-      INPUT.drawClip();
-      break;
-    case 2 :
-      frame_name = " — [processed]";
-      image(BLOB_DETECTOR.processedImage, 0, 0);
-      INPUT.drawClip();
-      break;
-    case 3 :
-      frame_name = " — [contours]";
-      image(BLOB_DETECTOR.contoursImage, 0, 0);
-      INPUT.drawClip();
-      break;
+    pushMatrix();
+    translate(OFFSET_X, OFFSET_Y);
+    String frame_name = "";
+
+    switch (VISIBLE_SNAPSHOT) {
+      case 0 :
+        frame_name = " — [input]";
+
+        image(mergedInputs, 0, 0);
+        for (int i = 0; i < INPUTS.length; i++) INPUTS[i].drawClip(i > 0 ? 300 : 0);
+        break;
+      case 1 :
+        frame_name = " — [pre-processed]";
+        image(BLOB_DETECTOR.preProcessedImage, 0, 0);
+        for (int i = 0; i < INPUTS.length; i++) INPUTS[i].drawClip(i > 0 ? 300 : 0);
+        break;
+      case 2 :
+        frame_name = " — [processed]";
+        image(BLOB_DETECTOR.processedImage, 0, 0);
+        for (int i = 0; i < INPUTS.length; i++) INPUTS[i].drawClip(i > 0 ? 300 : 0);
+        break;
+      case 3 :
+        frame_name = " — [contours]";
+        image(BLOB_DETECTOR.contoursImage, 0, 0);
+        for (int i = 0; i < INPUTS.length; i++) INPUTS[i].drawClip(i > 0 ? 300 : 0);
+        break;
+    }
+
+    if (show_blobs) BLOB_DETECTOR.displayBlobs();
+    popMatrix();
+    surface.setTitle("osc-colored-blob-tracking — " +int(frameRate)+"fps" + frame_name);
   }
-
-  if (show_blobs) BLOB_DETECTOR.displayBlobs();
-  popMatrix();
 
   cp5.draw();
   picking_draw();
-  surface.setTitle("osc-colored-blob-tracking — " +int(frameRate)+"fps" + frame_name);
 }
 
 // -------------------------------------------------------------------------
@@ -130,22 +143,29 @@ void mouseDragged() {
     int x = mouseX - OFFSET_X,
     y = mouseY - OFFSET_Y;
 
-    if (x > 0 && x < INPUT.getWidth() && y > 0 && y < INPUT.getHeight()) {
-      Rectangle c = INPUT.getClip();
-      if (!dragging) {
-        dragging = true;
-        c.x = x;
-        c.y = y;
+    for (int i = 0; i < INPUTS.length; i++) {
+      Input input = INPUTS[i];
+      y = y - int(i == 1) * 300;
+
+
+      if (x > 0 && x < input.getWidth() && y > 0 && y < input.getHeight()) {
+        Rectangle c = input.getClip();
+        if (!dragging) {
+          dragging = true;
+          c.x = x;
+          c.y = y;
+        }
+        c.width = x - c.x;
+        c.height = y - c.y;
+        break;
       }
-      c.width = x - c.x;
-      c.height = y - c.y;
     }
   }
 }
 
 void mouseReleased() {
   dragging = false;
-  INPUT.update();
+  // for (Input input : INPUTS) input.update();
 }
 
 void mousePressed() {
@@ -187,17 +207,18 @@ void save() {
   }
 
   // saving inputs clip
-  Rectangle clip = INPUT.getClip();
-  XML clip_xml = config.addChild("clip");
-  clip_xml.setString("name", CAPTURES[INPUT.id]);
-  clip_xml.setInt("x", clip.x);
-  clip_xml.setInt("y", clip.y);
-  clip_xml.setInt("width", clip.width);
-  clip_xml.setInt("height", clip.height);
+  for (Input input : INPUTS) {
+    Rectangle clip = input.getClip();
+    XML clip_xml = config.addChild("clip");
+    clip_xml.setString("name", CAPTURES[input.id]);
+    clip_xml.setInt("x", clip.x);
+    clip_xml.setInt("y", clip.y);
+    clip_xml.setInt("width", clip.width);
+    clip_xml.setInt("height", clip.height);
+  }
 
   saveXML(config, "config.xml");
   println("config.xml saved.");
-
 }
 
 void load() {
@@ -228,14 +249,16 @@ void load() {
     }
 
     // loading inputs clip
-    if (INPUT != null) {
-      XML clip_xml = config.getChild("clip");
+    for (Input input : INPUTS) {
+      if (input != null) {
+        XML clip_xml = config.getChild("clip");
 
-      Rectangle clip = INPUT.getClip();
-      clip.x = clip_xml.getInt("x");
-      clip.y = clip_xml.getInt("y");
-      clip.width = clip_xml.getInt("width");
-      clip.height = clip_xml.getInt("height");;
+        Rectangle clip = input.getClip();
+        clip.x = clip_xml.getInt("x");
+        clip.y = clip_xml.getInt("y");
+        clip.width = clip_xml.getInt("width");
+        clip.height = clip_xml.getInt("height");;
+      }
     }
 
     println("config.xml config loaded.");
@@ -254,10 +277,15 @@ void pick(int x, int y, ColorPicker picker) {
   // accounting for image(INPUT, OFFSET_X, OFFSET_Y);
   x -= OFFSET_X;
   y -= OFFSET_Y;
-  if (x > 0 && y > 0 && x < INPUT.getWidth() && y < INPUT.getHeight()) {
-    int index = x + y * INPUT.getWidth();
-    INPUT.loadPixels();
-    picker.add(INPUT.get(index));
+  for (int i = 0; i < INPUTS.length; i++) {
+    Input input = INPUTS[i];
+    y = y - int(i == 1) * 300;
+
+    if (x > 0 && y > 0 && x < input.getWidth() && y < input.getHeight()) {
+      int index = x + y * input.getWidth();
+      input.loadPixels();
+      picker.add(input.get(index));
+    }
   }
 }
 

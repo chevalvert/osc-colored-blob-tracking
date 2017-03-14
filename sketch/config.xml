@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
   <picker name="red">
-    <color b="142" g="62" r="16"/>
-    <color b="132" g="53" r="9"/>
-    <color b="139" g="66" r="0"/>
+    <color b="27" g="4" r="117"/>
+    <color b="13" g="0" r="113"/>
+    <color b="10" g="0" r="110"/>
+    <color b="34" g="6" r="95"/>
+    <color b="27" g="2" r="90"/>
   </picker>
   <picker name="green"/>
-  <picker name="blue"/>
-  <clip height="158" name="name=aGent V6 HD,size=400x300,fps=30" width="-249" x="326" y="64"/>
+  <picker name="blue">
+    <color b="122" g="51" r="0"/>
+    <color b="77" g="48" r="14"/>
+    <color b="78" g="44" r="16"/>
+    <color b="85" g="52" r="21"/>
+  </picker>
+  <clip height="263" name="name=aGent V6 HD,size=400x300,fps=15" width="336" x="26" y="10"/>
+  <clip height="263" name="name=aGent V6 HD #2,size=400x300,fps=15" width="336" x="26" y="10"/>
 </config>
